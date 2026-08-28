@@ -229,7 +229,7 @@ export const Header: React.FC<HeaderProps> = ({
               { id: 'new-arrivals', label: 'New In' },
               { id: 'best-sellers', label: 'Best Sellers' },
               { id: 'about', label: 'About' },
-              { id: 'contact', label: 'Concierge' }
+              { id: 'contact', label: 'Contact Us' }
             ].map(item => {
               const isActive = currentView === item.id;
               return (
@@ -451,11 +451,11 @@ export const Header: React.FC<HeaderProps> = ({
             ) : (
               <button
                 onClick={() => onOpenAuthModal && onOpenAuthModal()}
-                className="flex items-center gap-1.5 py-2 px-3 sm:px-4 rounded-full bg-white dark:bg-zinc-800 hover:bg-[#171717] hover:text-white dark:hover:bg-[#c8a96b] dark:hover:text-black text-xs font-bold tracking-wider uppercase transition-all text-[#171717] dark:text-white border border-[#c8a96b]/40 shadow-xs"
-                title="Sign In / Register"
+                className="flex items-center gap-1.5 py-2 px-3.5 sm:px-4 rounded-full bg-[#171717] dark:bg-[#c8a96b] text-white dark:text-black hover:bg-[#302f2d] dark:hover:bg-[#dfc285] text-xs font-bold tracking-wider uppercase transition-all shadow-md hover:scale-105 active:scale-95 border border-[#c8a96b]/40 cursor-pointer shrink-0"
+                title="Sign In to Patron Account"
               >
-                <User className="w-3.5 h-3.5 text-[#a78345]" />
-                <span className="hidden sm:inline">Sign In</span>
+                <User className="w-3.5 h-3.5 text-[#e7d5a5] dark:text-black" />
+                <span className="inline font-bold">Sign In</span>
               </button>
             )}
 
@@ -611,7 +611,7 @@ export const Header: React.FC<HeaderProps> = ({
               { id: 'new-arrivals', label: '04. New In Arrivals' },
               { id: 'best-sellers', label: '05. Most Loved Pieces' },
               { id: 'about', label: '06. Our Craft & Heritage' },
-              { id: 'contact', label: '07. VIP Concierge' }
+              { id: 'contact', label: '07. Contact & Support' }
             ].map(item => (
               <button
                 key={item.id}

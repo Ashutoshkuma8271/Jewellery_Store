@@ -52,7 +52,8 @@ export const GwellaryHeader: React.FC<Props> = ({ cartCount, onCart, onAccount, 
               ['COLLECTIONS', 'home#categories'],
               ['NEW ARRIVALS', 'home#new-arrivals'],
               ['BEST SELLERS', 'home#best-sellers'],
-              ['ABOUT US', 'about']
+              ['ABOUT US', 'about'],
+              ['CONTACT US', 'contact']
             ].map(([label, view]) => (
               <button
                 key={label}
@@ -95,7 +96,8 @@ export const GwellaryHeader: React.FC<Props> = ({ cartCount, onCart, onAccount, 
               ['Collections', 'home#categories'],
               ['New Arrivals', 'home#new-arrivals'],
               ['Best Sellers', 'home#best-sellers'],
-              ['About Us', 'about']
+              ['About Us', 'about'],
+              ['Contact Us', 'contact']
             ].map(([label, view]) => (
               <button
                 key={label}

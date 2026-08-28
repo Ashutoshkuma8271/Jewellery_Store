@@ -97,54 +97,73 @@ export const GwellaryHome: React.FC<Props> = ({
   const selectCategory = (name?: string) => onShop(name === 'All' ? undefined : name);
 
   const productCard = (product: Product, index: number) => (
-    <article key={product.id} className="gwellary-product-tilt group relative min-w-[260px] max-w-[280px] snap-start bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden border border-black/5 dark:border-white/5 shadow-sm hover:shadow-xl transition-all duration-300">
-      <div className="relative aspect-[4/5] overflow-hidden bg-[#f3ece6] dark:bg-zinc-800">
+    <article key={product.id} className="group relative w-full bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden border border-black/5 dark:border-white/10 shadow-sm hover:shadow-2xl transition-all duration-500 flex flex-col justify-between">
+      <div className="relative aspect-square overflow-hidden bg-[#f3ece6] dark:bg-zinc-800">
         <img
           loading="lazy"
           decoding="async"
           src={getOptimizedImageUrl(product.image, { width: 600, quality: 'auto' })}
           alt={product.name}
-          className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+          className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
         />
         <button
-          onClick={() => onWishlist(product.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onWishlist(product.id);
+          }}
           aria-label={`Save ${product.name}`}
-          className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/90 dark:bg-zinc-900/90 text-[#171717] dark:text-white shadow-sm hover:scale-110 transition-transform"
+          className="absolute right-3.5 top-3.5 grid h-9 w-9 place-items-center rounded-full bg-white/90 dark:bg-zinc-900/90 text-[#171717] dark:text-white shadow-md hover:scale-110 transition-transform cursor-pointer"
         >
           <Heart className={`h-4 w-4 ${wishlistIds.includes(product.id) ? 'fill-[#c8a96b] text-[#c8a96b]' : ''}`} />
         </button>
-        {index < 4 && (
-          <span className="absolute left-3 top-3 bg-[#171717] dark:bg-[#c8a96b] px-2.5 py-1 text-[9px] font-bold tracking-[.15em] text-white dark:text-black rounded-md">
-            BESTSELLER
+        {product.badge ? (
+          <span className="absolute left-3.5 top-3.5 bg-gradient-to-r from-[#171717] to-[#3a3a3a] dark:from-[#c8a96b] dark:to-[#e7d5a5] px-3 py-1 text-[9px] font-extrabold tracking-[.15em] text-white dark:text-black rounded-full shadow-md uppercase">
+            {product.badge}
           </span>
-        )}
+        ) : index < 3 ? (
+          <span className="absolute left-3.5 top-3.5 bg-gradient-to-r from-[#a78345] to-[#c8a96b] px-3 py-1 text-[9px] font-extrabold tracking-[.15em] text-white rounded-full shadow-md uppercase">
+            NEW IN ATELIER
+          </span>
+        ) : null}
         <button
           onClick={() => onAdd(product)}
-          className="absolute inset-x-3 bottom-3 translate-y-14 bg-[#171717] dark:bg-[#c8a96b] py-3 text-[11px] font-bold tracking-[.13em] text-white dark:text-black opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 rounded-xl shadow-lg"
+          className="absolute inset-x-4 bottom-4 translate-y-16 bg-[#171717] dark:bg-[#c8a96b] py-3.5 text-[11px] font-bold tracking-[.13em] text-white dark:text-black opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 rounded-2xl shadow-xl flex items-center justify-center gap-2 cursor-pointer"
         >
-          ADD TO BAG
+          <ShoppingBag className="w-4 h-4" />
+          <span>ADD TO SHOPPING BAG</span>
         </button>
       </div>
 
-      <div className="p-4">
-        <p className="text-[10px] tracking-[.15em] text-[#a78345] dark:text-[#c8a96b] uppercase font-bold">
-          {product.subCategory || product.category}
-        </p>
-        <div className="mt-1 flex items-start justify-between gap-3">
-          <button
-            onClick={() => onProduct(product)}
-            className="text-left font-serif text-base leading-tight text-[#171717] dark:text-white hover:text-[#a78345] dark:hover:text-[#c8a96b] truncate"
-          >
-            {product.name}
-          </button>
-          <span className="shrink-0 text-sm font-bold text-[#171717] dark:text-white">
-            {formatCurrency(product.price)}
+      <div className="p-5 space-y-2">
+        <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-[#a78345] dark:text-[#c8a96b]">
+          <span>{product.subCategory || product.category}</span>
+          <span className="flex items-center gap-1 text-black dark:text-white">
+            <Star className="w-3 h-3 fill-[#c8a96b] text-[#c8a96b]" />
+            {product.rating.toFixed(1)}
           </span>
         </div>
-        <div className="mt-2 flex items-center gap-1 text-xs text-[#77736d] dark:text-gray-400">
-          <Star className="h-3 w-3 fill-[#c8a96b] text-[#c8a96b]" />
-          <span className="font-semibold text-black dark:text-white">{product.rating.toFixed(1)}</span>
-          <span>({product.reviewCount})</span>
+
+        <h3
+          onClick={() => onProduct(product)}
+          className="font-serif text-lg font-bold text-[#171717] dark:text-white hover:text-[#a78345] dark:hover:text-[#c8a96b] cursor-pointer transition-colors truncate"
+        >
+          {product.name}
+        </h3>
+
+        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed font-normal">
+          {product.description}
+        </p>
+
+        <div className="pt-3 border-t border-black/5 dark:border-white/5 flex items-center justify-between">
+          <span className="font-serif text-lg font-bold text-black dark:text-white">
+            {formatCurrency(product.price)}
+          </span>
+          <button
+            onClick={() => onProduct(product)}
+            className="text-[10px] font-bold text-[#a78345] dark:text-[#c8a96b] uppercase tracking-wider hover:underline flex items-center gap-1"
+          >
+            Inspect <ArrowUpRight className="w-3 h-3" />
+          </button>
         </div>
       </div>
     </article>
@@ -413,22 +432,29 @@ export const GwellaryHome: React.FC<Props> = ({
         </div>
       </section>
 
-      {/* New Arrivals Section */}
+      {/* Just Arrived: New In Atelier Section */}
       <section id="new-arrivals" className="mx-auto max-w-[1440px] px-5 py-20 md:px-10">
-        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end mb-10">
           <div>
-            <p className="text-[10px] font-bold tracking-[.25em] text-[#a78345] dark:text-[#c8a96b] uppercase">JUST ARRIVED</p>
-            <h2 className="mt-2 font-serif text-3xl sm:text-5xl">New In Atelier</h2>
+            <p className="text-[10px] font-bold tracking-[.25em] text-[#a78345] dark:text-[#c8a96b] uppercase flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-[#c8a96b]" />
+              JUST ARRIVED • 2026 EDITION
+            </p>
+            <h2 className="mt-2 font-serif text-3xl sm:text-5xl font-bold text-[#171717] dark:text-white">New In Atelier</h2>
+            <p className="mt-2 text-xs sm:text-sm text-[#77736d] dark:text-gray-400 max-w-lg">
+              Individually crafted by master jewelers using sovereign 18K/22K gold, brilliant-cut diamonds, and rare gemstones.
+            </p>
           </div>
-          <div className="flex gap-2 overflow-auto text-[11px] font-bold tracking-[.12em]">
+
+          <div className="flex gap-2 overflow-x-auto pb-1 text-[11px] font-bold tracking-[.12em] scrollbar-none">
             {['All', 'Rings', 'Necklaces', 'Earrings', 'Bracelets'].map((value) => (
               <button
                 key={value}
                 onClick={() => setTab(value)}
-                className={`px-4 py-1.5 rounded-full transition-colors ${
+                className={`px-4 py-2 rounded-full transition-all cursor-pointer whitespace-nowrap ${
                   tab === value
-                    ? 'bg-[#171717] dark:bg-[#c8a96b] text-white dark:text-black'
-                    : 'text-[#77736d] hover:text-black dark:hover:text-white'
+                    ? 'bg-[#171717] dark:bg-[#c8a96b] text-white dark:text-black shadow-md scale-105'
+                    : 'bg-[#faf8f4] dark:bg-zinc-800 text-[#77736d] hover:text-black dark:hover:text-white border border-black/5 dark:border-white/5'
                 }`}
               >
                 {value.toUpperCase()}
@@ -437,16 +463,16 @@ export const GwellaryHome: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {products.filter(p => tab === 'All' || p.category === tab).slice(0, 8).map(productCard)}
         </div>
 
-        <div className="mt-10 text-center">
+        <div className="mt-12 text-center">
           <button
             onClick={() => selectCategory(tab)}
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#171717] dark:bg-[#c8a96b] text-white dark:text-black text-[11px] font-bold tracking-[.15em] uppercase hover:scale-105 transition-transform"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-[#171717] dark:bg-[#c8a96b] text-white dark:text-black text-xs font-bold tracking-[.15em] uppercase hover:scale-105 transition-all shadow-xl cursor-pointer"
           >
-            VIEW ALL {tab.toUpperCase()} <ChevronRight className="h-4 w-4" />
+            VIEW COMPLETE {tab.toUpperCase()} COLLECTION <ChevronRight className="h-4 w-4" />
           </button>
         </div>
       </section>

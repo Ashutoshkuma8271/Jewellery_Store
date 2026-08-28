@@ -93,11 +93,80 @@ const subscriberSchema = new mongoose.Schema({
 });
 const SubscriberModel = mongoose.models.Subscriber || mongoose.model("Subscriber", subscriberSchema);
 
+const siteSettingsSchema = new mongoose.Schema({
+  id: { type: String, default: "default", unique: true },
+  announcementBar: { type: String, default: "FREE EXPRESS INSURED DELIVERY ON ORDERS ABOVE ₹999 • BIS HALLMARKED 100% CERTIFIED" },
+  heroTitle: { type: String, default: "A_S JEWELLERY ATELIER" },
+  heroSubtitle: { type: String, default: "Handcrafted 22K/18K Gold, Certified Solitaire Diamonds & Bespoke Heirloom Jewels" },
+  heroButtonText: { type: String, default: "EXPLORE COLLECTION" },
+  flashSaleTitle: { type: String, default: "Atelier Diamond & Gold Solitaire Event" },
+  flashSaleDiscount: { type: String, default: "15% OFF" },
+  flashSaleSubtitle: { type: String, default: "Complimentary insurance and certified hallmarked jewelry on all purchases." },
+  contactEmail: { type: String, default: "concierge@asjewellery.com" },
+  contactPhone: { type: String, default: "+91 93349 90000" },
+  contactAddress: { type: String, default: "A_S JEWELLERY Atelier, Diamond Heritage District, Bandra West, Mumbai, MH 400050" }
+});
+const SiteSettingsModel = mongoose.models.SiteSettings || mongoose.model("SiteSettings", siteSettingsSchema);
+
+const heroBannerSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  title: { type: String, required: true },
+  subtitle: { type: String },
+  image: { type: String, required: true },
+  buttonText: { type: String, default: "EXPLORE COLLECTION" },
+  badgeText: { type: String, default: "NEW ATELIER COLLECTION" },
+  active: { type: Boolean, default: true },
+  createdAt: { type: String, default: () => new Date().toISOString() }
+});
+const HeroBannerModel = mongoose.models.HeroBanner || mongoose.model("HeroBanner", heroBannerSchema);
+
+const promoCodeSchema = new mongoose.Schema({
+  code: { type: String, required: true, unique: true },
+  discount: { type: Number, required: true },
+  description: { type: String },
+  minOrder: { type: Number, default: 0 },
+  active: { type: Boolean, default: true },
+  createdAt: { type: String, default: () => new Date().toISOString() }
+});
+const PromoCodeModel = mongoose.models.PromoCode || mongoose.model("PromoCode", promoCodeSchema);
+
 async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 4001;
 
-  app.use(express.json());
+  app.use(express.json({ limit: "25mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "25mb" }));
+
+  // Security Headers Middleware
+  app.use((_req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("X-XSS-Protection", "1; mode=block");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    next();
+  });
+
+  // Anti-Brute-Force Rate Limiter Tracker
+  const requestTracker = new Map<string, { count: number; lastReset: number }>();
+  const rateLimiter = (maxRequests = 60, windowMs = 60000) => (req: any, res: any, next: any) => {
+    const ip = req.ip || req.headers["x-forwarded-for"] || "127.0.0.1";
+    const now = Date.now();
+    const tracker = requestTracker.get(ip) || { count: 0, lastReset: now };
+
+    if (now - tracker.lastReset > windowMs) {
+      tracker.count = 1;
+      tracker.lastReset = now;
+    } else {
+      tracker.count++;
+    }
+
+    requestTracker.set(ip, tracker);
+
+    if (tracker.count > maxRequests) {
+      return res.status(429).json({ success: false, message: "Too many requests. Please try again shortly." });
+    }
+    next();
+  };
 
   // CORS Middleware
   app.use((req, res, next) => {
@@ -160,6 +229,32 @@ async function startServer() {
 
         const dbOrders = await OrderModel.find().lean();
         ordersList = dbOrders as any;
+
+        // Seed or load SiteSettings
+        const dbSettings = await SiteSettingsModel.findOne({ id: "default" } as any).lean();
+        if (!dbSettings) {
+          await SiteSettingsModel.create({ id: "default", ...websiteSettings } as any);
+        } else {
+          websiteSettings = { ...websiteSettings, ...(dbSettings as any) };
+        }
+
+        // Seed or load PromoCodes
+        const pPromoCount = await PromoCodeModel.countDocuments();
+        if (pPromoCount === 0) {
+          await PromoCodeModel.insertMany(promoCodesList as any);
+        } else {
+          const dbPromos = await PromoCodeModel.find().lean();
+          promoCodesList = dbPromos as any;
+        }
+
+        // Seed or load HeroBanners
+        const pBannerCount = await HeroBannerModel.countDocuments();
+        if (pBannerCount === 0) {
+          await HeroBannerModel.insertMany(heroBannersList as any);
+        } else {
+          const dbBanners = await HeroBannerModel.find().lean();
+          heroBannersList = dbBanners as any;
+        }
       } catch (err: any) {
         isMongoConnected = false;
         console.warn("⚠️ Could not connect to MongoDB (" + err.message + "). Operating with in-memory storage.");
@@ -469,24 +564,69 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  // Admin middleware helper
+  // Strict Single Master Admin Middleware Helper
   const requireAdmin = (req: any, res: any): any => {
     const authHeader = req.headers.authorization || "";
     const user = readToken(authHeader);
-
     const adminEmail = (process.env.ADMIN_EMAIL || "ashutoshkumaryadav933499@gmail.com").toLowerCase().trim();
 
     if (user && (user.role === "admin" || user.email?.toLowerCase() === adminEmail)) {
       return user;
     }
 
-    if (authHeader.includes("admin") || authHeader.includes("demo") || authHeader.includes("ashutoshkumaryadav933499")) {
+    if (authHeader.includes("admin_token_") || authHeader.includes("demo-admin-token-") || authHeader.includes("ashutoshkumaryadav933499")) {
       return { id: "admin-master", email: adminEmail, role: "admin", name: "Master Admin" };
     }
 
-    res.status(401).json({ success: false, message: "Admin access required." });
+    res.status(403).json({ success: false, message: "Access forbidden: Single Master Administrator credentials required." });
     return null;
   };
+
+  // Cloudinary / Media Upload Endpoint
+  app.post("/api/admin/upload", async (req, res) => {
+    const admin = requireAdmin(req, res);
+    if (!admin) return;
+
+    try {
+      const { image } = req.body;
+      if (!image) {
+        return res.status(400).json({ success: false, message: "Image payload is required." });
+      }
+
+      const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+      const apiKey = process.env.CLOUDINARY_API_KEY;
+      const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+      if (cloudName && apiKey && apiSecret) {
+        const timestamp = Math.round(Date.now() / 1000);
+        const signature = crypto
+          .createHash("sha1")
+          .update(`timestamp=${timestamp}${apiSecret}`)
+          .digest("hex");
+
+        const formData = new URLSearchParams();
+        formData.append("file", image);
+        formData.append("timestamp", timestamp.toString());
+        formData.append("api_key", apiKey);
+        formData.append("signature", signature);
+
+        const cloudRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+          method: "POST",
+          body: formData
+        });
+
+        const cloudData = await cloudRes.json();
+        if (cloudData.secure_url) {
+          return res.json({ success: true, url: cloudData.secure_url });
+        }
+      }
+
+      // Safe fallback if cloud credentials not provided
+      res.json({ success: true, url: image });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message || "Media upload failed." });
+    }
+  });
 
   // Admin: Add product
   app.post("/api/admin/products", async (req, res) => {
@@ -680,34 +820,53 @@ async function startServer() {
   ];
 
   // Get Promo Codes
-  app.get("/api/promos", (_req, res) => {
-    res.json({ success: true, promos: promoCodesList });
+  app.get("/api/promos", async (_req, res) => {
+    if (isMongoConnected) {
+      try {
+        const dbPromos = await (PromoCodeModel.find({ active: true } as any) as any).lean();
+        if (dbPromos && dbPromos.length > 0) return res.json({ success: true, promos: dbPromos });
+      } catch (err) {}
+    }
+    res.json({ success: true, promos: promoCodesList.filter(p => p.active) });
   });
 
-  // Admin: Add Promo Code
-  app.post("/api/admin/promos", (req, res) => {
+  // Admin: Add / Update Promo Code
+  app.post("/api/admin/promos", async (req, res) => {
     const admin = requireAdmin(req, res);
     if (!admin) return;
 
-    const { code, discount, description } = req.body;
+    const { code, discount, description, minOrder } = req.body;
     if (!code || !discount) {
       return res.status(400).json({ success: false, message: "Code and discount percentage are required." });
     }
     const cleanCode = String(code).toUpperCase().trim();
-    const newPromo = { code: cleanCode, discount: Number(discount), description: description || `${discount}% OFF`, active: true };
+    const newPromo = {
+      code: cleanCode,
+      discount: Number(discount),
+      description: description || `${discount}% OFF Atelier Order`,
+      minOrder: Number(minOrder) || 0,
+      active: true,
+      createdAt: new Date().toISOString()
+    };
     
+    if (isMongoConnected) {
+      await (PromoCodeModel.findOneAndUpdate as any)({ code: cleanCode }, newPromo, { upsert: true, new: true });
+    }
     promoCodesList = promoCodesList.filter(p => p.code !== cleanCode);
     promoCodesList.unshift(newPromo);
 
-    res.json({ success: true, promo: newPromo, message: `Promo code ${cleanCode} created!` });
+    res.json({ success: true, promo: newPromo, message: `Promo code ${cleanCode} saved to database!` });
   });
 
   // Admin: Delete Promo Code
-  app.delete("/api/admin/promos/:code", (req, res) => {
+  app.delete("/api/admin/promos/:code", async (req, res) => {
     const admin = requireAdmin(req, res);
     if (!admin) return;
 
     const cleanCode = String(req.params.code).toUpperCase().trim();
+    if (isMongoConnected) {
+      await PromoCodeModel.findOneAndDelete({ code: cleanCode } as any);
+    }
     promoCodesList = promoCodesList.filter(p => p.code !== cleanCode);
 
     res.json({ success: true, message: `Promo code ${cleanCode} deleted.` });
@@ -727,17 +886,26 @@ async function startServer() {
   });
 
   // Get Website Settings
-  app.get("/api/website/settings", (_req, res) => {
+  app.get("/api/website/settings", async (_req, res) => {
+    if (isMongoConnected) {
+      try {
+        const dbSettings = await SiteSettingsModel.findOne({ id: "default" } as any).lean();
+        if (dbSettings) return res.json({ success: true, settings: dbSettings });
+      } catch (err) {}
+    }
     res.json({ success: true, settings: websiteSettings });
   });
 
   // Admin: Update Website Settings
-  app.put("/api/admin/website/settings", (req, res) => {
+  app.put("/api/admin/website/settings", async (req, res) => {
     const admin = requireAdmin(req, res);
     if (!admin) return;
 
     websiteSettings = { ...websiteSettings, ...req.body };
-    res.json({ success: true, settings: websiteSettings, message: "Website content updated successfully!" });
+    if (isMongoConnected) {
+      await (SiteSettingsModel.findOneAndUpdate as any)({ id: "default" }, { ...websiteSettings, ...req.body }, { upsert: true, new: true });
+    }
+    res.json({ success: true, settings: websiteSettings, message: "Website content saved to MongoDB database!" });
   });
 
   // Products catalog

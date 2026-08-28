@@ -14,6 +14,7 @@ import {
 import { Product } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
 import { handleImageError } from '../utils/imageFallback';
+import { getOptimizedImageUrl } from '../utils/cloudinary';
 
 interface ShopCollectionViewProps {
   products: Product[];
@@ -415,7 +416,7 @@ export const ShopCollectionView: React.FC<ShopCollectionViewProps> = ({
                       <img
                         loading="lazy"
                         decoding="async"
-                        src={p.image}
+                        src={getOptimizedImageUrl(p.image, { width: 600, quality: 'auto' })}
                         alt={p.name}
                         onError={handleImageError}
                         onClick={() => onSelectProduct(p)}

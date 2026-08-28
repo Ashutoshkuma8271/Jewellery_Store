@@ -26,6 +26,7 @@ import {
 import { Product } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
 import { handleImageError } from '../utils/imageFallback';
+import { getOptimizedImageUrl } from '../utils/cloudinary';
 import { PRODUCTS } from '../data/jewelryData';
 
 interface ProductDetailsViewProps {
@@ -439,7 +440,9 @@ export const ProductDetailsView: React.FC<ProductDetailsViewProps> = ({
           ) : (
             /* Standard View Mode */
             <img
-              src={images[activeImage]}
+              loading="lazy"
+              decoding="async"
+              src={getOptimizedImageUrl(images[activeImage], { width: 900, quality: 'auto' })}
               alt={currentProduct.name}
               onError={handleImageError}
               className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700"

@@ -243,9 +243,6 @@ export const Header: React.FC<HeaderProps> = ({
                   }`}
                 >
                   {item.label}
-                  {isActive && (
-                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#c8a96b] dark:bg-black" />
-                  )}
                 </button>
               );
             })}

@@ -3,7 +3,7 @@ import { ChevronRight, Home } from 'lucide-react';
 import { Product } from '../types';
 
 interface BreadcrumbProps {
-  currentView: 'home' | 'shop' | 'dashboard' | 'orders' | 'product' | 'checkout' | 'about' | 'contact' | 'addresses' | 'verify-email';
+  currentView: 'home' | 'shop' | 'dashboard' | 'orders' | 'product' | 'checkout' | 'about' | 'contact' | 'addresses' | 'verify-email' | 'admin';
   activeCategory: string;
   selectedProduct: Product | null;
   onNavigateView: (view: any) => void;
@@ -121,6 +121,11 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
   } else if (currentView === 'verify-email') {
     items.push({
       label: 'Email Verification',
+      isCurrent: true
+    });
+  } else if (currentView === 'admin') {
+    items.push({
+      label: 'A_S JEWELLERY Admin Suite',
       isCurrent: true
     });
   }

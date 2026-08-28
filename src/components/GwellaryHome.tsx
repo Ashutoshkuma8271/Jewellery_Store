@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight, ShoppingBag, Check, ChevronRight, Heart, Instagram, Sparkles, Star, Truck, ShieldCheck } from 'lucide-react';
 import { Category, Product, Review } from '../types';
 import { formatCurrency } from '../utils/formatCurrency';
+import { getOptimizedImageUrl } from '../utils/cloudinary';
 
 type Props = {
   categories: Category[];
@@ -68,6 +69,7 @@ export const GwellaryHome: React.FC<Props> = ({
   const [slide, setSlide] = useState(0);
   const [hovered, setHovered] = useState(false);
   const [tab, setTab] = useState('All');
+  const [bestSellerCategory, setBestSellerCategory] = useState('All');
   const current = heroSlides[slide];
 
   useEffect(() => {
@@ -75,6 +77,22 @@ export const GwellaryHome: React.FC<Props> = ({
     const timer = window.setInterval(() => setSlide((v) => (v + 1) % heroSlides.length), 5000);
     return () => clearInterval(timer);
   }, [hovered]);
+
+  // Handle direct hash navigation on page mount / hash change
+  useEffect(() => {
+    const handleHashScroll = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash) {
+        const el = document.getElementById(hash);
+        if (el) {
+          setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 100);
+        }
+      }
+    };
+    handleHashScroll();
+    window.addEventListener('hashchange', handleHashScroll);
+    return () => window.removeEventListener('hashchange', handleHashScroll);
+  }, []);
 
   const selectCategory = (name?: string) => onShop(name === 'All' ? undefined : name);
 
@@ -84,7 +102,7 @@ export const GwellaryHome: React.FC<Props> = ({
         <img
           loading="lazy"
           decoding="async"
-          src={product.image}
+          src={getOptimizedImageUrl(product.image, { width: 600, quality: 'auto' })}
           alt={product.name}
           className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
         />
@@ -265,7 +283,9 @@ export const GwellaryHome: React.FC<Props> = ({
               }`}
             >
               <img
-                src={category.image}
+                loading="lazy"
+                decoding="async"
+                src={getOptimizedImageUrl(category.image, { width: 600, quality: 'auto' })}
                 alt={category.name}
                 className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
               />
@@ -281,19 +301,114 @@ export const GwellaryHome: React.FC<Props> = ({
         </div>
       </section>
 
-      {/* Curated Pieces / The Edit */}
-      <section className="bg-[#faf8f4] dark:bg-zinc-900/60 py-20 border-y border-black/5 dark:border-white/5">
+      {/* Best Sellers Section with Interactive Filters */}
+      <section id="best-sellers" className="bg-[#faf8f4] dark:bg-zinc-900/60 py-20 border-y border-black/5 dark:border-white/5">
         <div className="mx-auto max-w-[1440px] px-5 md:px-10">
-          <div className="mb-10 text-center max-w-2xl mx-auto">
-            <p className="text-[10px] font-bold tracking-[.25em] text-[#a78345] dark:text-[#c8a96b] uppercase">CURATED SELECTION</p>
-            <h2 className="mt-2 font-serif text-3xl sm:text-5xl">Handpicked For You</h2>
-            <p className="mt-3 text-sm text-[#77736d] dark:text-gray-400">
-              Timeless silhouettes designed to reflect modern elegance and heirloom craftsmanship.
-            </p>
+          <div className="mb-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+            <div>
+              <p className="text-[10px] font-bold tracking-[.25em] text-[#a78345] dark:text-[#c8a96b] uppercase">MOST WANTED</p>
+              <h2 className="mt-2 font-serif text-3xl sm:text-5xl">Best Sellers Collection</h2>
+              <p className="mt-2 text-xs sm:text-sm text-[#77736d] dark:text-gray-400 max-w-lg">
+                Our most sought-after certified diamond solitaires and pure gold creations, favored by connoisseurs.
+              </p>
+            </div>
+            
+            <div className="flex gap-2 overflow-x-auto pb-1 text-[11px] font-bold tracking-[.12em] scrollbar-none">
+              {['All', 'Rings', 'Necklaces', 'Earrings', 'Bracelets'].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setBestSellerCategory(cat)}
+                  className={`px-4 py-2 rounded-full transition-all cursor-pointer whitespace-nowrap ${
+                    bestSellerCategory === cat
+                      ? 'bg-[#171717] dark:bg-[#c8a96b] text-white dark:text-black shadow-md scale-105'
+                      : 'bg-white dark:bg-zinc-800 text-[#77736d] hover:text-black dark:hover:text-white border border-black/5 dark:border-white/5'
+                  }`}
+                >
+                  {cat.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="flex snap-x gap-5 overflow-x-auto pb-4 scrollbar-none">
-            {products.slice(0, 8).map(productCard)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {products
+              .filter(p => bestSellerCategory === 'All' || p.category === bestSellerCategory)
+              .slice(0, 8)
+              .map((p, idx) => (
+                <article key={p.id} className="group relative bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden border border-black/5 dark:border-white/10 shadow-sm hover:shadow-2xl transition-all duration-500 flex flex-col justify-between">
+                  <div className="relative aspect-square overflow-hidden bg-[#f3ece6] dark:bg-zinc-800">
+                    <img
+                      loading="lazy"
+                      decoding="async"
+                      src={getOptimizedImageUrl(p.image, { width: 600, quality: 'auto' })}
+                      alt={p.name}
+                      className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
+                    />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onWishlist(p.id);
+                      }}
+                      aria-label={`Save ${p.name}`}
+                      className="absolute right-3.5 top-3.5 grid h-9 w-9 place-items-center rounded-full bg-white/90 dark:bg-zinc-900/90 text-[#171717] dark:text-white shadow-md hover:scale-110 transition-transform cursor-pointer"
+                    >
+                      <Heart className={`h-4 w-4 ${wishlistIds.includes(p.id) ? 'fill-[#c8a96b] text-[#c8a96b]' : ''}`} />
+                    </button>
+                    <span className="absolute left-3.5 top-3.5 bg-gradient-to-r from-[#171717] to-[#3a3a3a] dark:from-[#c8a96b] dark:to-[#e7d5a5] px-3 py-1 text-[9px] font-extrabold tracking-[.15em] text-white dark:text-black rounded-full shadow-md">
+                      #{idx + 1} BESTSELLER
+                    </span>
+                    <button
+                      onClick={() => onAdd(p)}
+                      className="absolute inset-x-4 bottom-4 translate-y-16 bg-[#171717] dark:bg-[#c8a96b] py-3.5 text-[11px] font-bold tracking-[.13em] text-white dark:text-black opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 rounded-2xl shadow-xl flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <ShoppingBag className="w-4 h-4" />
+                      <span>ADD TO SHOPPING BAG</span>
+                    </button>
+                  </div>
+
+                  <div className="p-5 space-y-2">
+                    <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-[#a78345] dark:text-[#c8a96b]">
+                      <span>{p.subCategory || p.category}</span>
+                      <span className="flex items-center gap-1 text-black dark:text-white">
+                        <Star className="w-3 h-3 fill-[#c8a96b] text-[#c8a96b]" />
+                        {p.rating.toFixed(1)}
+                      </span>
+                    </div>
+
+                    <h3
+                      onClick={() => onProduct(p)}
+                      className="font-serif text-lg font-bold text-[#171717] dark:text-white hover:text-[#a78345] dark:hover:text-[#c8a96b] cursor-pointer transition-colors truncate"
+                    >
+                      {p.name}
+                    </h3>
+
+                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed font-normal">
+                      {p.description}
+                    </p>
+
+                    <div className="pt-3 border-t border-black/5 dark:border-white/5 flex items-center justify-between">
+                      <span className="font-serif text-lg font-bold text-black dark:text-white">
+                        {formatCurrency(p.price)}
+                      </span>
+                      <button
+                        onClick={() => onProduct(p)}
+                        className="text-[10px] font-bold text-[#a78345] dark:text-[#c8a96b] uppercase tracking-wider hover:underline flex items-center gap-1"
+                      >
+                        Details <ArrowUpRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+          </div>
+
+          <div className="mt-12 text-center">
+            <button
+              onClick={() => onShop(bestSellerCategory === 'All' ? undefined : bestSellerCategory)}
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-[#171717] dark:bg-[#c8a96b] text-white dark:text-black text-xs font-bold tracking-[.15em] uppercase hover:scale-105 transition-all shadow-xl cursor-pointer"
+            >
+              EXPLORE ALL BEST SELLERS <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </section>

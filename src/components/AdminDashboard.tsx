@@ -49,6 +49,7 @@ import {
 } from 'lucide-react';
 import { Product, Category } from '../types';
 import { apiFetch } from '../utils/apiFetch';
+import { getOptimizedImageUrl, uploadImageToBackend } from '../utils/cloudinary';
 
 interface AdminDashboardProps {
   token: string;
@@ -803,11 +804,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
                     onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
                     className={`${bgInput} rounded-xl px-4 py-2.5 text-xs font-bold outline-none`}
                   >
-                    <option value="Lighting">Lighting</option>
-                    <option value="Furniture">Furniture</option>
-                    <option value="Decor">Decor</option>
-                    <option value="Wellness">Wellness</option>
-                    <option value="Fashion">Fashion</option>
+                    <option value="Rings">Rings</option>
+                    <option value="Necklaces">Necklaces</option>
+                    <option value="Earrings">Earrings</option>
+                    <option value="Bracelets">Bracelets</option>
+                    <option value="Bespoke & Solitaires">Bespoke & Solitaires</option>
+                    <option value="Pendants">Pendants</option>
                   </select>
                   <input
                     type="number"
@@ -823,16 +825,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
                     onChange={(e) => setProductForm({ ...productForm, originalPrice: e.target.value })}
                     className={`${bgInput} rounded-xl px-4 py-2.5 text-xs font-bold outline-none`}
                   />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Image URL / Cloudinary CDN"
+                      value={productForm.image}
+                      onChange={(e) => setProductForm({ ...productForm, image: e.target.value })}
+                      className={`flex-1 ${bgInput} rounded-xl px-4 py-2.5 text-xs outline-none`}
+                    />
+                    <label className="px-3 py-2.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl cursor-pointer text-xs font-bold flex items-center gap-1 shrink-0 border border-amber-500/30 hover:bg-amber-500/30">
+                      <ImageIcon className="w-3.5 h-3.5" />
+                      <span>Upload</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const toastId = toast.loading('Uploading media to Cloudinary CDN...');
+                            try {
+                              const uploadedUrl = await uploadImageToBackend(file);
+                              setProductForm({ ...productForm, image: uploadedUrl });
+                              toast.success('Image optimized & saved!', { id: toastId });
+                            } catch {
+                              toast.error('Upload failed. Using direct image link.', { id: toastId });
+                            }
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
                   <input
                     type="text"
-                    placeholder="Image URL"
-                    value={productForm.image}
-                    onChange={(e) => setProductForm({ ...productForm, image: e.target.value })}
-                    className={`${bgInput} rounded-xl px-4 py-2.5 text-xs outline-none`}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Badge Tag (e.g. NEW, BESTSELLER)"
+                    placeholder="Badge Tag (e.g. SOLITAIRE, BESTSELLER, NEW)"
                     value={productForm.badge}
                     onChange={(e) => setProductForm({ ...productForm, badge: e.target.value })}
                     className={`${bgInput} rounded-xl px-4 py-2.5 text-xs outline-none`}
@@ -883,7 +909,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
                 <div key={p.id} className={`${bgCard} rounded-2xl overflow-hidden group border transition-all flex flex-col justify-between`}>
                   <div>
                     <div className="relative h-48 overflow-hidden bg-slate-200 dark:bg-zinc-950">
-                      <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img
+                        src={getOptimizedImageUrl(p.image, { width: 500, quality: 'auto' })}
+                        alt={p.name}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
                       {p.badge && (
                         <span className="absolute top-3 left-3 px-2.5 py-1 bg-amber-500 text-black font-mono font-bold text-[10px] rounded-md shadow-md">
                           {p.badge}

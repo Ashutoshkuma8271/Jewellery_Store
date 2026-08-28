@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
+import { Gem } from 'lucide-react';
 import { Header } from './components/Header';
 import { Breadcrumb } from './components/Breadcrumb';
 import { GwellaryHome } from './components/GwellaryHome';
@@ -15,16 +16,28 @@ import { AuthModal } from './components/AuthModal';
 import { AdminAuthModal } from './components/AdminAuthModal';
 import { FloatingWidgets } from './components/FloatingWidgets';
 
-// Dedicated Full-Screen View Components
-import { AdminDashboard } from './components/AdminDashboard';
-import { UserDashboardView } from './components/UserDashboardView';
-import { OrderHistoryView } from './components/OrderHistoryView';
-import { ProductDetailsView } from './components/ProductDetailsView';
-import { CheckoutView } from './components/CheckoutView';
-import { ShopCollectionView } from './components/ShopCollectionView';
-import { AboutView } from './components/AboutView';
-import { ContactView } from './components/ContactView';
-import { AddressBookView } from './components/AddressBookView';
+// Dynamic Lazy-Loaded Full-Screen View Components for High-Speed Performance
+const AdminDashboard = React.lazy(() => import('./components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const UserDashboardView = React.lazy(() => import('./components/UserDashboardView').then(m => ({ default: m.UserDashboardView })));
+const OrderHistoryView = React.lazy(() => import('./components/OrderHistoryView').then(m => ({ default: m.OrderHistoryView })));
+const ProductDetailsView = React.lazy(() => import('./components/ProductDetailsView').then(m => ({ default: m.ProductDetailsView })));
+const CheckoutView = React.lazy(() => import('./components/CheckoutView').then(m => ({ default: m.CheckoutView })));
+const ShopCollectionView = React.lazy(() => import('./components/ShopCollectionView').then(m => ({ default: m.ShopCollectionView })));
+const AboutView = React.lazy(() => import('./components/AboutView').then(m => ({ default: m.AboutView })));
+const ContactView = React.lazy(() => import('./components/ContactView').then(m => ({ default: m.ContactView })));
+const AddressBookView = React.lazy(() => import('./components/AddressBookView').then(m => ({ default: m.AddressBookView })));
+
+const ViewLoadingFallback = () => (
+  <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-center space-y-4">
+    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#171717] via-[#242424] to-[#0a0a0a] dark:from-[#2a2620] dark:to-[#171717] text-[#c8a96b] border border-[#c8a96b]/40 flex items-center justify-center shadow-lg animate-pulse">
+      <Gem className="w-6 h-6 text-[#c8a96b] animate-spin" style={{ animationDuration: '3s' }} />
+    </div>
+    <div className="space-y-1">
+      <p className="font-serif text-sm font-bold tracking-widest text-[#a78345] dark:text-[#c8a96b] uppercase">A_S JEWELLERY ATELIER</p>
+      <p className="text-xs text-gray-500 font-sans tracking-wider">Loading atelier experience...</p>
+    </div>
+  </div>
+);
 
 import { PRODUCTS, CATEGORIES, REVIEWS } from './data/jewelryData';
 import { Product, CartItem, Review } from './types';
@@ -80,7 +93,7 @@ export default function App() {
   } | null>(null);
 
   // Current Screen Navigation State
-  const [currentView, setCurrentView] = useState<'home' | 'shop' | 'dashboard' | 'orders' | 'product' | 'checkout' | 'about' | 'contact' | 'addresses'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'shop' | 'dashboard' | 'orders' | 'product' | 'checkout' | 'about' | 'contact' | 'addresses' | 'admin'>('home');
 
   // Modals & Drawers
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -469,129 +482,138 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Content Area */}
-      <main className={currentView === 'home' ? 'w-full pt-20 md:pt-24' : 'w-full pt-2 min-h-[70vh]'}>
-        {currentView === 'home' && (
-          <GwellaryHome
-            categories={categories}
-            products={products}
-            reviews={reviews}
-            wishlistIds={wishlistIds}
-            cartCount={cartTotalCount}
-            onShop={(category) => {
-              setActiveCategory(category || 'all');
-              handleNavigateView('shop');
-            }}
-            onProduct={(product) => {
-              setSelectedProduct(product);
-              handleNavigateView('product');
-            }}
-            onAdd={(product) => handleAddToCart(product, 1)}
-            onWishlist={handleToggleWishlist}
-            onCart={() => setIsCartOpen(true)}
-            onAccount={() => isAuthenticated ? handleNavigateView('dashboard') : setIsAuthModalOpen(true)}
-          />
-        )}
+      {/* Dynamic Main View Switch with Suspense */}
+      <main className={currentView === 'home' ? 'w-full pt-20 md:pt-24 flex-1' : 'w-full pt-2 min-h-[70vh] flex-1'}>
+        <Suspense fallback={<ViewLoadingFallback />}>
+          {currentView === 'home' && (
+            <GwellaryHome
+              categories={categories}
+              products={products}
+              reviews={reviews}
+              wishlistIds={wishlistIds}
+              cartCount={cartTotalCount}
+              onShop={(category) => {
+                setActiveCategory(category || 'all');
+                handleNavigateView('shop');
+              }}
+              onProduct={(product) => {
+                setSelectedProduct(product);
+                handleNavigateView('product');
+              }}
+              onAdd={(product) => handleAddToCart(product, 1)}
+              onWishlist={handleToggleWishlist}
+              onCart={() => setIsCartOpen(true)}
+              onAccount={() => isAuthenticated ? handleNavigateView('dashboard') : setIsAuthModalOpen(true)}
+            />
+          )}
 
-        {currentView === 'dashboard' && (
-          <UserDashboardView
-            user={currentUser}
-            onNavigate={(v) => handleNavigateView(v as any)}
-            onSelectProduct={(p) => {
-              setSelectedProduct(p);
-              handleNavigateView('product');
-            }}
-            wishlistCount={wishlistIds.length}
-            initialTab={currentUser?.role === 'admin' ? 'admin' : 'profile'}
-            onLogout={handleLogout}
-            authToken={authToken}
-            onAuthSuccess={handleAuthSuccess}
-          />
-        )}
+          {currentView === 'admin' && (
+            <AdminDashboard
+              token={authToken || ''}
+              onLogout={handleLogout}
+            />
+          )}
 
-        {currentView === 'orders' && (
-          <UserDashboardView
-            user={currentUser}
-            onNavigate={(v) => handleNavigateView(v as any)}
-            onSelectProduct={(p) => {
-              setSelectedProduct(p);
-              handleNavigateView('product');
-            }}
-            wishlistCount={wishlistIds.length}
-            initialTab="orders"
-            onLogout={handleLogout}
-            authToken={authToken}
-            onAuthSuccess={handleAuthSuccess}
-          />
-        )}
+          {currentView === 'dashboard' && (
+            <UserDashboardView
+              user={currentUser}
+              onNavigate={(v) => handleNavigateView(v as any)}
+              onSelectProduct={(p) => {
+                setSelectedProduct(p);
+                handleNavigateView('product');
+              }}
+              wishlistCount={wishlistIds.length}
+              initialTab={currentUser?.role === 'admin' ? 'admin' : 'profile'}
+              onLogout={handleLogout}
+              authToken={authToken}
+              onAuthSuccess={handleAuthSuccess}
+            />
+          )}
 
-        {currentView === 'addresses' && (
-          <UserDashboardView
-            user={currentUser}
-            onNavigate={(v) => handleNavigateView(v as any)}
-            onSelectProduct={(p) => {
-              setSelectedProduct(p);
-              handleNavigateView('product');
-            }}
-            wishlistCount={wishlistIds.length}
-            initialTab="address"
-            onLogout={handleLogout}
-            authToken={authToken}
-            onAuthSuccess={handleAuthSuccess}
-          />
-        )}
+          {currentView === 'orders' && (
+            <UserDashboardView
+              user={currentUser}
+              onNavigate={(v) => handleNavigateView(v as any)}
+              onSelectProduct={(p) => {
+                setSelectedProduct(p);
+                handleNavigateView('product');
+              }}
+              wishlistCount={wishlistIds.length}
+              initialTab="orders"
+              onLogout={handleLogout}
+              authToken={authToken}
+              onAuthSuccess={handleAuthSuccess}
+            />
+          )}
 
-        {currentView === 'product' && (
-          <ProductDetailsView
-            product={selectedProduct || undefined}
-            products={products}
-            onSelectProduct={(p) => {
-              setSelectedProduct(p);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            onAddToCart={(p) => handleAddToCart(p, 1)}
-            onToggleWishlist={handleToggleWishlist}
-            isWishlisted={selectedProduct ? wishlistIds.includes(selectedProduct.id) : false}
-            wishlistIds={wishlistIds}
-            onNavigateToCheckout={(p) => {
-              handleAddToCart(p, 1);
-              handleNavigateView('checkout');
-            }}
-          />
-        )}
+          {currentView === 'addresses' && (
+            <UserDashboardView
+              user={currentUser}
+              onNavigate={(v) => handleNavigateView(v as any)}
+              onSelectProduct={(p) => {
+                setSelectedProduct(p);
+                handleNavigateView('product');
+              }}
+              wishlistCount={wishlistIds.length}
+              initialTab="address"
+              onLogout={handleLogout}
+              authToken={authToken}
+              onAuthSuccess={handleAuthSuccess}
+            />
+          )}
 
-        {currentView === 'checkout' && (
-          <CheckoutView
-            cartItems={cartItems}
-            onCompletePurchase={() => {
-              setCartItems([]);
-              handleNavigateView('orders');
-            }}
-            onNavigate={(v) => handleNavigateView(v as any)}
-          />
-        )}
+          {currentView === 'product' && (
+            <ProductDetailsView
+              product={selectedProduct || undefined}
+              products={products}
+              onSelectProduct={(p) => {
+                setSelectedProduct(p);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onAddToCart={(p) => handleAddToCart(p, 1)}
+              onToggleWishlist={handleToggleWishlist}
+              isWishlisted={selectedProduct ? wishlistIds.includes(selectedProduct.id) : false}
+              wishlistIds={wishlistIds}
+              onNavigateToCheckout={(p) => {
+                handleAddToCart(p, 1);
+                handleNavigateView('checkout');
+              }}
+            />
+          )}
 
-        {currentView === 'shop' && (
-          <ShopCollectionView
-            products={filteredProducts}
-            initialCategory={activeCategory}
-            onSelectProduct={(p) => {
-              setSelectedProduct(p);
-              handleNavigateView('product');
-            }}
-            onAddToCart={(p) => handleAddToCart(p, 1)}
-            onToggleWishlist={handleToggleWishlist}
-            wishlistIds={wishlistIds}
-          />
-        )}
+          {currentView === 'checkout' && (
+            <CheckoutView
+              cartItems={cartItems}
+              onCompletePurchase={() => {
+                setCartItems([]);
+                handleNavigateView('orders');
+              }}
+              onNavigate={(v) => handleNavigateView(v as any)}
+            />
+          )}
 
-        {currentView === 'about' && (
-          <AboutView onExploreCollection={() => handleNavigateView('shop')} />
-        )}
+          {currentView === 'shop' && (
+            <ShopCollectionView
+              products={filteredProducts}
+              initialCategory={activeCategory}
+              onSelectProduct={(p) => {
+                setSelectedProduct(p);
+                handleNavigateView('product');
+              }}
+              onAddToCart={(p) => handleAddToCart(p, 1)}
+              onToggleWishlist={handleToggleWishlist}
+              wishlistIds={wishlistIds}
+            />
+          )}
 
-        {currentView === 'contact' && (
-          <ContactView />
-        )}
+          {currentView === 'about' && (
+            <AboutView onExploreCollection={() => handleNavigateView('shop')} />
+          )}
+
+          {currentView === 'contact' && (
+            <ContactView />
+          )}
+        </Suspense>
       </main>
 
       {/* Global Luxury Footer with Dedicated Admin Portal Access */}

@@ -12,15 +12,8 @@ export default defineConfig(() => {
       },
     },
     server: {
-      port: 5174,
-      strictPort: true,
-      proxy: {
-        '/api': {
-          target: 'http://127.0.0.1:4001',
-          changeOrigin: true,
-          secure: false,
-        },
-      },
+      port: 3000,
+      host: '0.0.0.0',
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       hmr: false,
       watch: process.env.DISABLE_HMR === 'true' ? null : {},

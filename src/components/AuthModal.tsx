@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Mail, Lock, User, Phone, Eye, EyeOff, ShieldCheck, ArrowRight, Check, Sparkles, LogIn, Send, UserCheck, KeyRound, Gem } from 'lucide-react';
+import { X, Mail, Lock, User, Phone, Eye, EyeOff, ShieldCheck, ArrowRight, Check, Sparkles, LogIn, Send, UserCheck, KeyRound, Gem, CheckCircle2 } from 'lucide-react';
 import { apiFetch } from '../utils/apiFetch';
 import { toast } from 'react-hot-toast';
 

@@ -132,7 +132,7 @@ const PromoCodeModel = mongoose.models.PromoCode || mongoose.model("PromoCode", 
 
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 4001;
+  const PORT = 3000;
 
   app.use(express.json({ limit: "25mb" }));
   app.use(express.urlencoded({ extended: true, limit: "25mb" }));
@@ -179,11 +179,6 @@ async function startServer() {
     next();
   });
 
-  // Start HTTP server listening immediately on port 4001
-  const server = app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 A_S JEWELLERY Backend Server running on http://localhost:${PORT}`);
-  });
-
   // Data storage with Mongo DB & In-Memory fallback
   let isMongoConnected = false;
   let productList: Product[] = [...PRODUCTS];
@@ -199,6 +194,7 @@ async function startServer() {
     (async () => {
       try {
         mongoose.set('strictQuery', false);
+        mongoose.set('bufferCommands', false);
         await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
         isMongoConnected = true;
         console.log("Connected to MongoDB Database successfully!");
@@ -1299,23 +1295,24 @@ async function startServer() {
     });
   });
 
-  // Vite development middleware vs Standalone API server vs Static Production
-  if (process.env.NODE_ENV === "production") {
+  // Vite development middleware vs Static Production
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (_req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
-  } else if (process.env.SERVE_VITE === "true") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true, hmr: false },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-    app.get("/", (_req, res) => {
-      res.json({ status: "ok", service: "LUXE Express Backend API", port: PORT });
-    });
   }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
 }
 
 startServer().catch((err) => {

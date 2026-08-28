@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowUp } from 'lucide-react';
-import whatsappIcon from '../assets/whatsapp.png';
+import whatsappIcon from '../../assets/whatsapp.png';
 
 interface FloatingWidgetsProps {
   whatsappNumber?: string;

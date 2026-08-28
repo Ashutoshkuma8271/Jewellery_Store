@@ -357,8 +357,14 @@ export default function App() {
     return matchesCategory && matchesSearch;
   });
 
-  // Add item to cart
+  // Add item to cart (Requires Authentication)
   const handleAddToCart = (product: Product, quantity = 1) => {
+    if (!isAuthenticated || !currentUser) {
+      toast.error('Please sign in or create an account to add items to your shopping bag.');
+      setIsAuthModalOpen(true);
+      return;
+    }
+
     setCartItems(prev => {
       const existing = prev.find(item => item.product.id === product.id);
       if (existing) {
@@ -394,8 +400,14 @@ export default function App() {
     toast.success('Piece removed from bag');
   };
 
-  // Toggle wishlist
+  // Toggle wishlist (Requires Authentication)
   const handleToggleWishlist = (productId: string) => {
+    if (!isAuthenticated || !currentUser) {
+      toast.error('Please sign in or create an account to save items to your wishlist.');
+      setIsAuthModalOpen(true);
+      return;
+    }
+
     setWishlistIds(prev => {
       if (prev.includes(productId)) {
         toast.success('Removed from wishlist');

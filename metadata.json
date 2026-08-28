@@ -1,0 +1,6 @@
+{
+  "name": "LUXE Premium Retail",
+  "description": "Curated luxury e-commerce platform for high-end fashion, home, tech, and lifestyle essentials.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

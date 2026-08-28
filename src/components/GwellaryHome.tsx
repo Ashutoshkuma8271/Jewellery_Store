@@ -273,12 +273,12 @@ export const GwellaryHome: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {categories.slice(0, 6).map((category, i) => (
             <button
               key={category.id}
               onClick={() => selectCategory(category.name)}
-              className={`group relative overflow-hidden rounded-2xl text-left shadow-sm hover:shadow-xl transition-all ${
+              className={`group relative overflow-hidden rounded-2xl sm:rounded-3xl text-left shadow-sm hover:shadow-xl transition-all ${
                 i === 0 || i === 3 ? 'md:row-span-2 md:aspect-auto' : 'aspect-[4/5]'
               }`}
             >
@@ -330,7 +330,7 @@ export const GwellaryHome: React.FC<Props> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
             {products
               .filter(p => bestSellerCategory === 'All' || p.category === bestSellerCategory)
               .slice(0, 8)
@@ -437,8 +437,8 @@ export const GwellaryHome: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-7 md:grid-cols-4">
-          {products.filter(p => tab === 'All' || p.category === tab).slice(0, 4).map(productCard)}
+        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          {products.filter(p => tab === 'All' || p.category === tab).slice(0, 8).map(productCard)}
         </div>
 
         <div className="mt-10 text-center">

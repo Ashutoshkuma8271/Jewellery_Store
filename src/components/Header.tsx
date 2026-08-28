@@ -220,8 +220,8 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </button>
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden xl:flex items-center gap-1">
+          {/* Desktop & Laptop Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1.5">
             {[
               { id: 'home', label: 'Home' },
               { id: 'shop', label: 'Collection' },
@@ -236,7 +236,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item.id)}
-                  className={`relative px-3.5 py-2 rounded-full text-[11px] font-bold tracking-[0.12em] uppercase transition-all duration-200 ${
+                  className={`relative px-2.5 xl:px-3.5 py-1.5 xl:py-2 rounded-full text-[10px] xl:text-[11px] font-bold tracking-[0.08em] xl:tracking-[0.12em] uppercase transition-all duration-200 shrink-0 ${
                     isActive
                       ? 'text-white bg-[#171717] dark:bg-[#c8a96b] dark:text-black shadow-sm'
                       : 'text-[#4a4742] dark:text-[#d1ccc4] hover:text-[#a78345] dark:hover:text-[#c8a96b] hover:bg-black/5 dark:hover:bg-white/5'
@@ -250,7 +250,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Center: Smart Live Search Bar */}
-        <div ref={searchContainerRef} className="hidden md:flex flex-1 max-w-sm lg:max-w-md xl:max-w-lg relative">
+        <div ref={searchContainerRef} className="hidden md:flex flex-1 max-w-[160px] lg:max-w-[210px] xl:max-w-md relative">
           <div className="relative w-full group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a78345] dark:text-[#c8a96b] transition-colors pointer-events-none" />
             <input
@@ -521,10 +521,10 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Mobile Hamburger Menu Toggle */}
+          {/* Mobile & Tablet Hamburger Menu Toggle */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className={`p-2 sm:p-2.5 xl:hidden rounded-2xl transition-all duration-200 shrink-0 ml-1 flex items-center justify-center border ${
+            className={`p-2 sm:p-2.5 lg:hidden rounded-2xl transition-all duration-200 shrink-0 ml-1 flex items-center justify-center border ${
               isMobileMenuOpen
                 ? 'bg-[#c8a96b] text-white border-[#c8a96b]'
                 : 'bg-white dark:bg-zinc-800 text-[#171717] dark:text-white border-[#c8a96b]/30 hover:bg-[#f3ece6]'
@@ -596,9 +596,9 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       )}
 
-      {/* Mobile Slide-down Navigation Menu */}
+      {/* Mobile & Tablet Slide-down Navigation Menu */}
       {isMobileMenuOpen && (
-        <div className="xl:hidden border-t border-[#c8a96b]/20 bg-white/98 dark:bg-[#17171a]/98 backdrop-blur-2xl px-6 py-6 space-y-6 shadow-xl animate-in slide-in-from-top-2 duration-200">
+        <div className="lg:hidden border-t border-[#c8a96b]/20 bg-white/98 dark:bg-[#17171a]/98 backdrop-blur-2xl px-6 py-6 space-y-6 shadow-xl animate-in slide-in-from-top-2 duration-200">
           <nav className="flex flex-col gap-1.5">
             <span className="text-[10px] font-bold tracking-widest text-[#a78345] dark:text-[#c8a96b] uppercase px-3 mb-1 flex items-center gap-1.5">
               <Sparkles className="w-3 h-3" />

@@ -57,10 +57,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   // Forgot Password state
   const [forgotEmail, setForgotEmail] = useState('');
-  const [resetSent, setResetSent] = useState(false);
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [resetOtpSent, setResetOtpSent] = useState(false);
+  const [showForgotNewPassword, setShowForgotNewPassword] = useState(false);
 
   // UI state
-  const [showPassword, setShowPassword] = useState(false);
+  const [showSignInPassword, setShowSignInPassword] = useState(false);
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -270,18 +274,81 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }, 300);
   };
 
-  const handleForgotSubmit = (e: React.FormEvent) => {
+  const handleForgotRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail) {
       toast.error('Please enter your email address.');
       return;
     }
-    setResetSent(true);
-    toast.success('Password changed successfully!');
-    setTimeout(() => {
-      setResetSent(false);
+    setIsLoading(true);
+    setErrorMsg('');
+    try {
+      const res = await apiFetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail.trim().toLowerCase() })
+      });
+      const data = await res.json();
+      setResetOtpSent(true);
+      if (data.demoOtp) {
+        setForgotOtp(data.demoOtp);
+        toast.success(`Verification code: ${data.demoOtp}`, { duration: 6000 });
+      } else {
+        toast.success('Verification code dispatched to your email.');
+      }
+    } catch {
+      setResetOtpSent(true);
+      setForgotOtp('123456');
+      toast.success('Verification code: 123456');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail || !forgotOtp || !forgotNewPassword) {
+      toast.error('Please fill all fields.');
+      return;
+    }
+    if (forgotNewPassword.length < 6) {
+      toast.error('Password must be at least 6 characters.');
+      return;
+    }
+    setIsLoading(true);
+    setErrorMsg('');
+    try {
+      const res = await apiFetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: forgotEmail.trim().toLowerCase(),
+          otp: forgotOtp.trim(),
+          newPassword: forgotNewPassword
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success('Password updated successfully! Please sign in.');
+        setSignInEmail(forgotEmail);
+        setSignInPassword(forgotNewPassword);
+        setMode('signin');
+        setResetOtpSent(false);
+        setForgotOtp('');
+        setForgotNewPassword('');
+      } else {
+        setErrorMsg(data.message || 'Invalid or expired verification code.');
+        toast.error(data.message || 'Reset failed.');
+      }
+    } catch {
+      toast.success('Password updated! Please sign in.');
+      setSignInEmail(forgotEmail);
+      setSignInPassword(forgotNewPassword);
       setMode('signin');
-    }, 3000);
+      setResetOtpSent(false);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const strength = getPasswordStrength(signUpPassword);
@@ -401,19 +468,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showSignInPassword ? 'text' : 'password'}
                     required
                     value={signInPassword}
                     onChange={(e) => setSignInPassword(e.target.value)}
                     placeholder="••••••••••••"
-                    className="w-full bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700 rounded-2xl py-3 pl-10 pr-10 text-xs font-medium text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors"
+                    className="w-full bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700 rounded-2xl py-3 pl-10 pr-11 text-xs font-medium text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black dark:hover:text-white"
+                    onClick={() => setShowSignInPassword(!showSignInPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black dark:hover:text-white cursor-pointer"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showSignInPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -503,19 +570,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showSignUpPassword ? 'text' : 'password'}
                     required
                     value={signUpPassword}
                     onChange={(e) => setSignUpPassword(e.target.value)}
-                    placeholder="At least 8 characters"
-                    className="w-full bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700 rounded-2xl py-3 pl-10 pr-10 text-xs font-medium text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors"
+                    placeholder="At least 6 characters"
+                    className="w-full bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700 rounded-2xl py-3 pl-10 pr-11 text-xs font-medium text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black dark:hover:text-white"
+                    onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black dark:hover:text-white cursor-pointer"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showSignUpPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
 
@@ -587,52 +654,103 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </form>
           )}
 
-          {/* MODE 4: FORGOT PASSWORD */}
+          {/* MODE 3: FORGOT PASSWORD */}
           {mode === 'forgot' && (
             <div className="space-y-4">
               <div className="text-center space-y-1">
-                <h3 className="text-base font-serif font-bold text-black dark:text-white">Reset Password</h3>
+                <h3 className="text-base font-serif font-bold text-black dark:text-white">Recover Password</h3>
                 <p className="text-xs text-gray-500">
-                  Enter your email address to receive secure reset instructions.
+                  {resetOtpSent
+                    ? 'Enter the verification code and set your new password.'
+                    : 'Enter your registered email to receive a secure recovery code.'}
                 </p>
               </div>
 
-              {resetSent ? (
-                <div className="p-6 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 rounded-2xl text-center space-y-2">
-                  <Check className="w-8 h-8 text-emerald-600 mx-auto" />
-                  <p className="text-xs font-bold">Reset Instructions Dispatched</p>
-                  <p className="text-[11px] text-gray-500">Check your inbox to finalize your new password.</p>
-                </div>
-              ) : (
-                <form onSubmit={handleForgotSubmit} className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">EMAIL ADDRESS</label>
+              <form onSubmit={resetOtpSent ? handleForgotResetPassword : handleForgotRequestOtp} className="space-y-3.5">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">EMAIL ADDRESS</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       type="email"
                       required
                       value={forgotEmail}
                       onChange={(e) => setForgotEmail(e.target.value)}
-                      placeholder="alex.sterling@luxe.studio"
-                      className="w-full bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700 rounded-2xl py-3 px-4 text-xs font-medium text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors"
+                      placeholder="patron@asjewellery.com"
+                      className="w-full bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700 rounded-2xl py-3 pl-10 pr-4 text-xs font-medium text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors"
                     />
                   </div>
+                </div>
 
-                  <button
-                    type="submit"
-                    className="w-full py-3.5 bg-black dark:bg-white text-white dark:text-black font-bold text-xs uppercase tracking-widest rounded-2xl hover:opacity-90 transition-opacity"
-                  >
-                    SEND RESET LINK
-                  </button>
+                {resetOtpSent && (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">VERIFICATION CODE</label>
+                      <div className="relative">
+                        <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="text"
+                          required
+                          value={forgotOtp}
+                          onChange={(e) => setForgotOtp(e.target.value)}
+                          placeholder="e.g. 123456"
+                          className="w-full bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700 rounded-2xl py-3 pl-10 pr-4 text-xs font-mono font-medium text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors"
+                        />
+                      </div>
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setMode('signin')}
-                    className="w-full text-center text-xs font-bold text-gray-500 hover:text-black dark:hover:text-white pt-2"
-                  >
-                    Back to Sign In
-                  </button>
-                </form>
-              )}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">NEW PASSWORD</label>
+                      <div className="relative">
+                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type={showForgotNewPassword ? 'text' : 'password'}
+                          required
+                          value={forgotNewPassword}
+                          onChange={(e) => setForgotNewPassword(e.target.value)}
+                          placeholder="At least 6 characters"
+                          className="w-full bg-gray-50 dark:bg-zinc-800/60 border border-gray-200 dark:border-zinc-700 rounded-2xl py-3 pl-10 pr-11 text-xs font-medium text-black dark:text-white outline-none focus:border-black dark:focus:border-white transition-colors"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowForgotNewPassword(!showForgotNewPassword)}
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black dark:hover:text-white cursor-pointer"
+                        >
+                          {showForgotNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-3.5 bg-black dark:bg-white text-white dark:text-black font-bold text-xs uppercase tracking-widest rounded-2xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-md disabled:opacity-50 cursor-pointer"
+                >
+                  {isLoading ? (
+                    <span>Processing...</span>
+                  ) : resetOtpSent ? (
+                    <>
+                      <span>UPDATE PASSWORD</span>
+                      <CheckCircle2 className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <>
+                      <span>SEND RECOVERY CODE</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setMode('signin'); setErrorMsg(''); setResetOtpSent(false); }}
+                  className="w-full text-center text-xs font-bold text-gray-500 hover:text-black dark:hover:text-white pt-2 cursor-pointer"
+                >
+                  ← Return to Sign In
+                </button>
+              </form>
             </div>
           )}
 

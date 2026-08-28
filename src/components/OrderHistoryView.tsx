@@ -292,6 +292,27 @@ export const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({ onNavigate }
   const [timeFilter, setTimeFilter] = useState('All Orders');
   const [statusFilter, setStatusFilter] = useState('All Statuses');
 
+  // Load user-specific isolated orders
+  useEffect(() => {
+    try {
+      const userStr = localStorage.getItem('luxe_current_user') || sessionStorage.getItem('luxe_current_user');
+      let userEmail = '';
+      if (userStr) {
+        const u = JSON.parse(userStr);
+        userEmail = u.email;
+      }
+      const userOrdersKey = userEmail ? `luxe_orders_${userEmail}` : 'luxe_orders';
+      const storedOrders = localStorage.getItem(userOrdersKey) || sessionStorage.getItem(userOrdersKey);
+      if (storedOrders) {
+        const parsed = JSON.parse(storedOrders);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setOrders(parsed);
+          return;
+        }
+      }
+    } catch {}
+  }, []);
+
   // Tracking Drawer State
   const [activeTrackingItem, setActiveTrackingItem] = useState<{ order: Order; item: OrderItem } | null>(null);
 
